@@ -19,10 +19,14 @@ import re
 # Define user credentials
 names = ["Lucy"]
 usernames = ["Lucy"]
-passwords = ["password1"]  # Replace with your actual passwords
+passwords = ["password1", "password2"]  # Replace with your actual passwords
 
 # Hash the passwords
-hashed_passwords = stauth.Hasher(passwords).generate()
+# hashed_passwords = stauth.Hasher(passwords).generate()
+# hashed_passwords = stauth.Hasher().hash(passwords)
+
+# This one worked
+hashed_passwords = [stauth.Hasher().hash(password) for password in passwords]
 
 # Create the credentials dictionary
 credentials = {
