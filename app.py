@@ -135,9 +135,11 @@ if navigation == "Home":
         st.image("b.png")
 
 # Read tweets from a text file
-def load_tweets_from_file(filename="fetched_tweets_1.txt"):
-    with open(filename, "r", encoding="utf-8") as file:
-        tweets = [line.strip() for line in file.readlines()]
+def load_tweets_from_file(filenames=["fetched_tweets_1.txt", "fetched_tweets_2.txt"]):
+    tweets = []
+    for filename in filenames:
+        with open(filename, "r", encoding="utf-8") as file:
+            tweets.extend([line.strip() for line in file.readlines()])
     return tweets
 
 # Politics Today Section
@@ -376,6 +378,18 @@ if navigation == "Presidential Election Prediction":
             # Display predictions
             st.write("Predicted Election Outcomes:")
             st.write(predictions)
+
+            # Predict the possible winner
+            if len(predictions) > 0:
+                # Count the frequency of each predicted outcome
+                prediction_counts = pd.Series(predictions).value_counts()
+
+                st.write(prediction_counts)
+
+                # Determine the most frequent outcome
+                possible_winner = prediction_counts.idxmax()
+                st.write("Possible Winner Based on Predictions:")
+                st.write(f"The predicted winner is: **{possible_winner}** with {prediction_counts[possible_winner]} mentions.")
 
         else:
             st.error('Error: End date must fall after start date.')
