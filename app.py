@@ -249,9 +249,16 @@ if navigation == "Presidential Election Prediction":
         credentials = {}
 
     authenticator = stauth.Authenticate(credentials, "Elections_Predictor", "abcdef", cookie_expiry_days=30)
-    name, authentication_status, username = authenticator.login(label="Login Section", location="main")
+    # name, authentication_status, username = authenticator.login(label="Login Section", location="main")
+    # name, authentication_status, username = authenticator.login("Login Section", location="main")
 
-    if authentication_status:
+    result = authenticator.login()
+
+    print("Result:", result)  # Debugging line to check the result
+
+    name, authentication_status, username = ["", False, ""]  # Default values
+
+    if st.session_state.get('authentication_status'):
         authenticator.logout("Logout", "main")
         st.title(f"Welcome {name}")
 
@@ -317,7 +324,7 @@ if navigation == "Presidential Election Prediction":
         else:
             st.error('Error: End date must fall after start date.')
 
-    elif authentication_status is False:
-        st.error("Username/password is incorrect")
-    elif authentication_status is None:
-        st.warning("Please enter your username and password")
+    elif st.session_state.get('authentication_status') is False:
+        st.error('Username/password is incorrect')
+    elif st.session_state.get('authentication_status') is None:
+        st.warning('Please enter your username and password')
