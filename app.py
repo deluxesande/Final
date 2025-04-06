@@ -1,3 +1,4 @@
+from time import time
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
@@ -15,6 +16,9 @@ import streamlit_authenticator as stauth
 import tweepy
 from textblob import TextBlob  # For sentiment analysis
 import re
+
+from twikit import Client
+import asyncio
 
 # Define user credentials
 names = ["Lucy"]
@@ -130,6 +134,12 @@ if navigation == "Home":
     with col2:
         st.image("b.png")
 
+# Read tweets from a text file
+def load_tweets_from_file(filename="fetched_tweets_1.txt"):
+    with open(filename, "r", encoding="utf-8") as file:
+        tweets = [line.strip() for line in file.readlines()]
+    return tweets
+
 # Politics Today Section
 if navigation == "Politics Today":
     st.markdown("""
@@ -186,7 +196,11 @@ if navigation == "Politics Today":
                 return tweets
 
             keywords = ["election", "president", "Kenya"]
-            live_tweets = fetch_live_tweets(start, end, keywords)
+            # live_tweets = fetch_live_tweets(start, end, keywords)
+
+            # Replace live_tweets with tweets loaded from the file
+            live_tweets = load_tweets_from_file()
+
             live_df = pd.DataFrame(live_tweets, columns=['tweet_clean'])
 
             # Preprocess the tweets
@@ -254,13 +268,11 @@ if navigation == "Presidential Election Prediction":
 
     result = authenticator.login()
 
-    print("Result:", result)  # Debugging line to check the result
-
     name, authentication_status, username = ["", False, ""]  # Default values
 
     if st.session_state.get('authentication_status'):
         authenticator.logout("Logout", "main")
-        st.title(f"Welcome {name}")
+        st.title(f"Welcome *{st.session_state.get("name")}*")
 
         st.write("Predict the presidential aspirant most likely to win the forthcoming elections.")
 
@@ -271,20 +283,51 @@ if navigation == "Presidential Election Prediction":
             st.success(f'Start date: `{start}`\nEnd date: `{end}`')
 
             # Fetch live tweets
-            keywords = ["Justin", "Raila", "William", "Kalonzo", "Martha", "Gideon", "Musalia", "Wajackoyah"]
+            keywords = ["Elections", "President", "Kenya"]
 
-            def fetch_live_tweets(start_date, end_date, keywords):
-                client = tweepy.Client(bearer_token='AAAAAAAAAAAAAAAAAAAAADGh0QEAAAAAAnkLkU0ZyQSvAVQatuhbD5Wne4I%3DK58LTMvTbQUKb76c1WgjOJuqY4YpkUCl6qRkCmQTTRhVivF2U4')  # Replace with your actual Bearer Token
-                query = f"({' OR '.join(keywords)}) lang:en -is:retweet"
-                tweets = []
+            async def fetch_live_tweets_async(start_date, end_date, keywords):
+                # Initialize Twikit client
+                client = Client()
+                
+                # Login with your Twitter credentials
                 try:
-                    for tweet in tweepy.Paginator(client.search_recent_tweets, query=query, max_results=100).flatten(limit=1000):
+                    await client.login(
+                        auth_info_1="luxiejones1@gmail.com",
+                        auth_info_2="luxiejones1@gmail.com",
+                        password="passwad123",
+                        # For 2FA accounts:
+                        # auth_info_3="your_2fa_code"  
+                    )
+                except Exception as e:
+                    st.error(f"Twitter login failed: {e}")
+                    return []
+
+                tweets = []
+                query = f"({' OR '.join(keywords)}) lang:en -is:retweet"
+                
+                try:
+                    # Search for tweets (await the coroutine)
+                    results = await client.search_tweet(
+                        query,
+                        'Top',
+                        count=100  # Number of tweets to fetch
+                    )
+                    
+                    for tweet in results:
                         tweets.append(tweet.text)
+                        
                 except Exception as e:
                     st.error(f"Error fetching tweets: {e}")
+                    return []
+
                 return tweets
 
-            live_tweets = fetch_live_tweets(start, end, keywords)
+            def fetch_live_tweets(start_date, end_date, keywords):
+                # Run the async function synchronously
+                return asyncio.run(fetch_live_tweets_async(start_date, end_date, keywords))
+            
+            # live_tweets = fetch_live_tweets(start, end, keywords)
+            live_tweets = load_tweets_from_file()
 
             # Analyze sentiment
             def analyze_sentiment(tweets):
@@ -298,6 +341,10 @@ if navigation == "Presidential Election Prediction":
             sentiments = analyze_sentiment(live_tweets)
             live_df = pd.DataFrame({'tweet_clean': live_tweets, 'sentiment': sentiments})
 
+            # Clean the data: Remove rows with zero or invalid sentiment values
+            live_df = live_df[live_df['sentiment'] != 0]  # Remove rows where 'sentiment' is 0
+            live_df = live_df.dropna()  # Remove rows with missing values (if any)
+
             # Display sentiment analysis results
             st.write("Sentiment Analysis Results:")
             st.write(live_df)
@@ -305,8 +352,12 @@ if navigation == "Presidential Election Prediction":
             # Predict using a trained model
             from sklearn.ensemble import RandomForestClassifier
 
-            X = df[['Polarity', 'other_features']]  # Replace 'other_features' with relevant features
-            y = df['election_outcome']  # Target variable
+            X = df[['Polarity']]  # Replace 'other_features' with relevant features
+            y = df['Expressions']  # Target variable
+
+            if len(X) == 0 or len(y) == 0:
+                st.error("No data available for training!")
+
             model = RandomForestClassifier()
             try:
                 model.fit(X, y)
@@ -314,7 +365,12 @@ if navigation == "Presidential Election Prediction":
                 st.error(f"Error training model: {e}")
                 predictions = []
 
-            live_X = live_df[['sentiment']]  # Use 'sentiment' as a feature for prediction
+            # Clean the data: Remove rows with zero or invalid sentiment values
+            live_df = live_df[live_df['sentiment'] != 0]  # Remove rows where 'sentiment' is 0
+            live_df = live_df.dropna()  # Remove rows with missing values (if any)
+
+
+            live_X = live_df[['sentiment']].rename(columns={'sentiment': 'Polarity'})  # Rename 'sentiment' to 'Polarity'
             predictions = model.predict(live_X)
 
             # Display predictions
