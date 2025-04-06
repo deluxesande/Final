@@ -17,7 +17,6 @@ import tweepy
 from textblob import TextBlob  # For sentiment analysis
 import re
 
-from twikit import Client
 import asyncio
 
 # Define user credentials
@@ -297,48 +296,6 @@ if navigation == "Presidential Election Prediction":
 
             # Fetch live tweets
             keywords = ["Elections", "President", "Kenya"]
-
-            async def fetch_live_tweets_async(start_date, end_date, keywords):
-                # Initialize Twikit client
-                client = Client()
-                
-                # Login with your Twitter credentials
-                try:
-                    await client.login(
-                        auth_info_1="luxiejones1@gmail.com",
-                        auth_info_2="luxiejones1@gmail.com",
-                        password="passwad123",
-                        # For 2FA accounts:
-                        # auth_info_3="your_2fa_code"  
-                    )
-                except Exception as e:
-                    st.error(f"Twitter login failed: {e}")
-                    return []
-
-                tweets = []
-                query = f"({' OR '.join(keywords)}) lang:en -is:retweet"
-                
-                try:
-                    # Search for tweets (await the coroutine)
-                    results = await client.search_tweet(
-                        query,
-                        'Top',
-                        count=100  # Number of tweets to fetch
-                    )
-                    
-                    for tweet in results:
-                        tweets.append(tweet.text)
-                        
-                except Exception as e:
-                    st.error(f"Error fetching tweets: {e}")
-                    return []
-
-                return tweets
-
-            def fetch_live_tweets(start_date, end_date, keywords):
-                # Run the async function synchronously
-                return asyncio.run(fetch_live_tweets_async(start_date, end_date, keywords))
-            
             # live_tweets = fetch_live_tweets(start, end, keywords)
             live_tweets = load_tweets_from_file()
 
