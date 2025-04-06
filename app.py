@@ -91,6 +91,17 @@ def set_bg(png_file):
             ; 
             z-index: -1; 
         }}
+
+        .stApp::before {{
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Black overlay with 50% opacity */
+        z-index: -1;
+    }}
         </style>
     """
     st.markdown(page_bg_img, unsafe_allow_html=True)
@@ -118,7 +129,7 @@ with st.sidebar:
 
 # Home Section
 if navigation == "Home":
-    st.markdown("<h2 style='text-align: center; color: black;'>The Indispensables Election Analysis</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: white;'>The Indispensables Election Analysis</h2>", unsafe_allow_html=True)
     st.markdown("*****************")
     st.subheader("About Elections")
     col1, col2 = st.columns(2)
