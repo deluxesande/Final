@@ -4,11 +4,8 @@ from streamlit_option_menu import option_menu
 import pandas as pd
 import datetime
 from sklearn.metrics.pairwise import linear_kernel
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from PIL import Image
-from io import BytesIO
+from sklearn.feature_extraction.text import TfidfVectorizer
 import altair as alt
-from datetime import date
 import base64
 import pickle
 from pathlib import Path
@@ -17,12 +14,27 @@ import tweepy
 from textblob import TextBlob  # For sentiment analysis
 import re
 
-import asyncio
+# Read credentials from db
+def load_users_and_passwords(filenames=["auth/users.txt", "auth/password.txt"]):
+    users = []
+    passwords = []
+
+    with open(filenames[0], "r", encoding="utf-8") as file:
+        users.extend([line.strip() for line in file.readlines()])
+
+    with open(filenames[1], "r", encoding="utf-8") as file:
+        passwords.extend([line.strip() for line in file.readlines()])
+
+    return users, passwords
 
 # Define user credentials
 names = ["Lucy"]
-usernames = ["Lucy"]
-passwords = ["password1", "password2"]  # Replace with your actual passwords
+# usernames = ["Lucy"]
+# passwords = ["password1", "password2"]  # Replace with your actual passwords
+
+# Define credentials stored in db
+usernames, passwords = load_users_and_passwords()
+names = usernames
 
 # Hash the passwords
 # hashed_passwords = stauth.Hasher(passwords).generate()
@@ -32,14 +44,25 @@ passwords = ["password1", "password2"]  # Replace with your actual passwords
 hashed_passwords = [stauth.Hasher().hash(password) for password in passwords]
 
 # Create the credentials dictionary
+# this only adds the first user
+# credentials = {
+#     "usernames": {
+#         usernames[0]: {
+#             "name": names[0],
+#             "password": hashed_passwords[0]
+#         }
+#     }
+# }
+
+# Adding all credentials loaded
 credentials = {
-    "usernames": {
-        usernames[0]: {
-            "name": names[0],
-            "password": hashed_passwords[0]
-        }
-    }
+    "usernames": {}
 }
+
+for key, username in enumerate(usernames):
+    print(username)
+    new_user = {username: {"name": names[key],"password": passwords[key]}}
+    credentials["usernames"].update(new_user)
 
 # Save the credentials to a pickle file
 file_path = "hashed_pw.pkl"
