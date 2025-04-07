@@ -28,7 +28,7 @@ def load_users_and_passwords(filenames=["auth/users.txt", "auth/password.txt"]):
     return users, passwords
 
 # Define user credentials
-names = ["Lucy"]
+# names = ["Lucy"]
 # usernames = ["Lucy"]
 # passwords = ["password1", "password2"]  # Replace with your actual passwords
 
@@ -60,8 +60,7 @@ credentials = {
 }
 
 for key, username in enumerate(usernames):
-    print(username)
-    new_user = {username: {"name": names[key],"password": passwords[key]}}
+    new_user = {username: {"name": names[key],"password": hashed_passwords[key]}}
     credentials["usernames"].update(new_user)
 
 # Save the credentials to a pickle file
@@ -138,6 +137,14 @@ df = pd.concat([d1, d2, d3, d4, d5], axis=0, ignore_index=True)
 df.dropna(subset=['tweet_clean'], inplace=True)
 df['time'] = pd.to_datetime(df['time']).dt.normalize()
 
+# Read tweets from a text file
+def load_tweets_from_file(filenames=["fetched_tweets_1.txt", "fetched_tweets_2.txt"]):
+    tweets = []
+    for filename in filenames:
+        with open(filename, "r", encoding="utf-8") as file:
+            tweets.extend([line.strip() for line in file.readlines()])
+    return tweets
+
 # Define current date
 current_date = datetime.datetime.now().date()
 
@@ -146,9 +153,11 @@ set_bg("background.png")
 
 # Sidebar navigation
 with st.sidebar:
-    navigation = option_menu(None, ["Home", "Politics Today", "Presidential Election Prediction"],
-                             icons=['house-fill', "book-half", "check-circle-fill"], default_index=1)
-
+    navigation = option_menu(None, ["Home", "Politics Today", "Presidential Election Prediction", "Register"],
+                             icons=['house-fill', "book-half", "check-circle-fill", "person-plus-fill"], default_index=1)
+# Initialize navigation state
+if "navigation" not in st.session_state:
+    st.session_state["navigation"] = "Home"
 # Home Section
 if navigation == "Home":
     st.markdown("<h2 style='text-align: center; color: white;'>The Indispensables Election Analysis</h2>", unsafe_allow_html=True)
@@ -166,14 +175,6 @@ if navigation == "Home":
                     """, unsafe_allow_html=True)
     with col2:
         st.image("b.png")
-
-# Read tweets from a text file
-def load_tweets_from_file(filenames=["fetched_tweets_1.txt", "fetched_tweets_2.txt"]):
-    tweets = []
-    for filename in filenames:
-        with open(filename, "r", encoding="utf-8") as file:
-            tweets.extend([line.strip() for line in file.readlines()])
-    return tweets
 
 # Politics Today Section
 if navigation == "Politics Today":
@@ -389,3 +390,22 @@ if navigation == "Presidential Election Prediction":
         st.error('Username/password is incorrect')
     elif st.session_state.get('authentication_status') is None:
         st.warning('Please enter your username and password')
+
+# Register Section
+if navigation == "Register":
+    st.subheader("Register a New User")
+    
+    # Input fields for username and password
+    new_username = st.text_input("Enter a username")
+    new_password = st.text_input("Enter a password", type="password")
+    
+    if st.button("Register"):
+        if new_username and new_password:
+            # Save the username and password to a text file
+            with open("auth/users.txt", "a") as file:
+                file.write(f"\n{new_username}")
+            with open("auth/password.txt", "a") as file:
+                file.write(f"\n{new_password}")
+            st.success("User registered successfully!")
+        else:
+            st.error("Please fill in both username and password.")
